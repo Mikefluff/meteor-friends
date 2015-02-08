@@ -26,17 +26,6 @@ if (Meteor.isServer) {
     //         return func(options, user);
     //     });
     // };
-
-    // TODO: using the dirty way here, now people can't use Accounts.onCreateUser or this package will fail to work. This DOES work though
-    Accounts.onCreateUser(function (options, user) {
-        if (!user.profile) {
-            user.profile = options.profile || {};
-        }
-        if (!user.profile.friends) {
-            user.profile.friends = [];
-        }
-        return user;
-    });
 }
 
 Meteor.methods({
