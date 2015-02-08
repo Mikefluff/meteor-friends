@@ -14,9 +14,9 @@ Package.on_test(function (api) {
   api.use('autopublish', ['client', 'server']);
   api.use('insecure', ['client', 'server']);
 
-  api.add_files('azeirah:validation.js', ['client', 'server']);
-  api.add_files('azeirah:friends.js', ['client', 'server']);
-  api.add_files('azeirah:friends-test.js');
+  api.addFiles('azeirah:validation.js', ['client', 'server']);
+  api.addFiles('azeirah:friends.js', ['client', 'server']);
+  api.addFiles('azeirah:friends-test.js');
 });
 
 Package.on_use(function (api, where) {
@@ -24,10 +24,11 @@ Package.on_use(function (api, where) {
   api.use('underscore', 'server');
   api.use('accounts-base', ['client', 'server']);
   api.use('accounts-password', ['client', 'server']);
+  api.use('templating', 'client')
 
-  api.add_files('azeirah:friendHelpers.js', ['client']);
-  api.add_files('azeirah:validation.js', ['client', 'server']);
-  api.add_files('azeirah:friends.js', ['client', 'server']);
+  api.addFiles('azeirah:friendHelpers.js', ['client']);
+  api.addFiles('azeirah:validation.js', ['client', 'server']);
+  api.addFiles('azeirah:friends.js', ['client', 'server']);
 
   api.export('Friends');
 });
