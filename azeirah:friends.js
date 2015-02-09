@@ -30,9 +30,14 @@ if (Meteor.isServer) {
 
 Meteor.methods({
     addFriend: function (userId, friendId, status) {
+        check(userId, String);
+        check(friendId, String);
+        check(status, String);
+
         Meteor.users.update({_id: userId},
             {$addToSet: {"profile.friends": {_id: friendId, status: status}}});
     },
+
     /**
      * Updates the status of two friends.
      * The first user's status will be applied to the second users reference to
@@ -77,7 +82,10 @@ Meteor.methods({
      *     status: "friend" // a status from STATUSES
      * }
      */
-    updateFriendStatus: function (userStatus, userStatus2) {
+    updateUserAndFriendStatus: function (userStatus, userStatus2) {
+        check(userStatus, Object);
+        check(userStatus2, Object);
+
         if (!this.isSimulation) {
             var updateStatus = function (userId, friendId, status) {
                 Meteor.users.update({_id: userId, "profile.friends._id": friendId}, {$set: {"profile.friends.$.status": status}});
@@ -86,25 +94,57 @@ Meteor.methods({
             updateStatus(userStatus2.userId, userStatus.userId, userStatus.status);
         }
     },
+    updateFriendStatus: function(userId, friendId, status) {
+      check(userId, String);
+      check(friendId, String);
+      check(status, String);
+
+      Meteor.users.update({_id: userId, "profile.friends._id": friendId}, {$set: {"profile.friends.$.status": status}});
+    },
     friendRequest: function (userId, friendId) {
+        check(userId, String);
+        check(friendId, String);
+        console.log("1")
+        console.log(validations.areRelated(userId, friendId))
+
+        // var user = Meteor.users.findOne({_id: friendId, "profile.friends._id": userId, "profile.friends.status": STATUSES.empty});
+        // var friend = Meteor.users.findOne({_id: userId, "profile.friends._id": friendId, "profile.friends.status": STATUSES.empty});
+
+        var user = Meteor.users.findOne({_id: userId, "profile.friends._id": friendId, "profile.friends.status": STATUSES.empty});
+        var friend = Meteor.users.findOne({_id: friendId, "profile.friends._id": userId, "profile.friends.status": STATUSES.empty});
         if (!validations.areRelated(userId, friendId)) {
-            Meteor.call('addFriend', userId, friendId, STATUSES.pending);
-            Meteor.call('addFriend', friendId, userId, STATUSES.request);
+            console.log("2")
+            if (user && !friend) {
+              Meteor.call("updateFriendStatus", userId, friendId, STATUSES.pending);
+              Meteor.call('addFriend', friendId, userId, STATUSES.request);
+            } else if (friend && !user) {
+              Meteor.call('updateFriendStatus', friendId, userId, STATUSES.pending);
+              Meteor.call('addFriend', userId, friendId, STATUSES.request);
+            } else {
+              Meteor.call('addFriend', userId, friendId, STATUSES.pending);
+              Meteor.call('addFriend', friendId, userId, STATUSES.request);
+            }
         }
     },
     confirmRequest: function (userId, friendId) {
+        check(userId, String);
+        check(friendId, String);
+
         var validated = validations.validateUserRelations(
             {userId: userId, status: STATUSES.pending},
             {userId: friendId, status: STATUSES.request}
         );
         if (validated) {
-            Meteor.call('updateFriendStatus',
+            Meteor.call('updateUserAndFriendStatus',
                 {userId: userId, status: STATUSES.friend},
                 {userId: friendId, status: STATUSES.friend}
             );
         }
     },
     denyRequest: function (userId, friendId) {
+        check(userId, String);
+        check(friendId, String);
+
         var validated = validations.validateUserRelations(
             {userId: userId, status: STATUSES.pending},
             {userId: friendId, status: STATUSES.request}
@@ -112,13 +152,17 @@ Meteor.methods({
         // TODO: add option to choose between empty for the request sender or
         // pending, for privacy
         if (validated) {
-            Meteor.call('updateFriendStatus',
-                {userId: userId, status: STATUSES.empty},
-                {userId: friendId, status: STATUSES.empty}
-            );
+            // change friend status to empty
+            Meteor.call("updateFriendStatus", friendId, userId, STATUSES.empty);
+
+            // remove friend from user friends
+            Meteor.users.update({_id: userId}, {$pull: {"profile.friends": {_id: friendId}}});
         }
     },
     removeFriend: function (userId, friendId) {
+        check(userId, String);
+        check(friendId, String);
+
         var validated = validations.validateUserRelations(
             {userId: userId, status: STATUSES.friend},
             {userId: friendId, status: STATUSES.friend}
@@ -126,10 +170,11 @@ Meteor.methods({
         // TODO: add option to choose between empty for the removed friend or
         // friend, for privacy
         if (validated) {
-            Meteor.call('updateFriendStatus',
-                {userId: userId, status: STATUSES.empty},
-                {userId: friendId, status: STATUSES.empty}
-            );
+            // change friend status to empty
+            Meteor.call("updateFriendStatus", friendId, userId, STATUSES.empty);
+
+            // remove friend from user friends
+            Meteor.users.update({_id: userId}, {$pull: {"profile.friends": {_id: friendId}}});
         }
     }
 });

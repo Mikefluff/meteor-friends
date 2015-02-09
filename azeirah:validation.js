@@ -15,7 +15,8 @@ validations = {};
 validations.validateUserRelations = function (userRelation, userRelation2) {
     var validateUserRelation = function (user, expected) {
         return _.some(user.profile.friends, function (friend) {
-            return friend._id === expected.userId && friend.status === expected.status;
+            console.log(friend.status, expected.status)
+            return (friend._id === expected.userId && friend.status === expected.status)// && (friend.status !== STATUSES.empty && expected.status !== STATUSES.empty);
         });
     };
     var user = Meteor.users.findOne({_id: userRelation.userId});
